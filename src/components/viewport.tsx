@@ -6,7 +6,7 @@ import { Canvas } from "@react-three/fiber";
 function Viewport() {
   return (
     <div className="w-full h-full">
-      <Canvas shadows camera={{ position: [5, 5, 5] }}>
+      <Canvas shadows camera={{ position: [5, 5, 5] }} resize={{ debounce: 0 }}>
         <mesh>
           <boxGeometry />
           <meshStandardMaterial />
