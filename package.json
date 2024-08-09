@@ -10,6 +10,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@react-three/drei": "^9.109.5",
     "@react-three/fiber": "^8.16.8",
@@ -24,7 +25,8 @@
     "react-resizable-panels": "^2.0.23",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.3"
+    "zod": "^3.23.3",
+    "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@types/eslint": "^8.56.2",
