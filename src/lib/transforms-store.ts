@@ -1,3 +1,5 @@
+'use clien'
+
 import { createStore } from 'zustand/vanilla'
 
 interface TransformBase {
@@ -59,7 +61,7 @@ export const defaultInitState: TransformState = {
 export const isTransformValid = (transform: Transforms) => {
   const { type, ...data } = transform;
   // console.log(data)
-  const valids = Object.values(data).some((v) => ((typeof v != "number") || isNaN(v)))
+  const valids = Object.values(data).some((v) => (isNaN(+v)))
   if (valids) {
     return false
   }
@@ -119,11 +121,7 @@ export const createTransformStore = (
       if (!chain) return false;
       const transform = chain.transforms.at(transformIndex)
       if (!transform) return false;
-      const { type, ...data } = transform;
-      if (Object.values(data).some((v) => (typeof v == "number" && isNaN(v)))) {
-        return false
-      }
-      return true
+      return isTransformValid(transform)
     }
   }
   ))

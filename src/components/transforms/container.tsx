@@ -58,22 +58,21 @@ function TransformRow({ chainIndex, transformIndex, ...transformData }: Transfor
     removeTransform(chainIndex, transformIndex)
   }
 
-  const isValid = (() => {
-    const chain = chains.at(chainIndex);
-    if (!chain) return false;
-
-    const transform = chain.transforms.at(transformIndex);
-    if (!transform) return false;
-
-    return isTransformValid(transform)
-  })()
-
-  console.log(isValid, chains)
+  // const isValid = (() => {
+  //   const chain = chains.at(chainIndex);
+  //   if (!chain) return false;
+  //
+  //   const transform = chain.transforms.at(transformIndex);
+  //   if (!transform) return false;
+  //
+  //   return isTransformValid(transform)
+  // })()
+  //
+  // console.log(isValid, chains)
 
   return (
     <div className={"relative flex flex-row justify-between transition-all ease-in-out delay-50 duration-300 mx-2 p-2 rounded-sm border-hidden border-[1px]"
       + (hovered ? " my-2 shadow-md border-solid bg-primary-foreground " : " ")
-      + (isValid ? " border-solid border-destructive " : " ")
     }>
       <div className="px-2">
         {transformSetting({ inputData: transformData })}

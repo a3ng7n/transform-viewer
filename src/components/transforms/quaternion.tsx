@@ -11,7 +11,9 @@ type QuaternionSettingProps = {
 } & Quaternion
 
 function QuaternionSetting({ chainIndex, transformIndex, ...props }: QuaternionSettingProps) {
-  const { setTransform } = useTransformStore((state) => state)
+  const { setTransform, isTransformValid } = useTransformStore((state) => state)
+
+  const isValid = isTransformValid(chainIndex, transformIndex)
 
   const propertyChangeHandler = (property: keyof Quaternion) => {
     const handler: ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -28,18 +30,28 @@ function QuaternionSetting({ chainIndex, transformIndex, ...props }: QuaternionS
     return handler
   }
 
+  const invalidAttrs: { className?: string } = {}
+
+  if (!isValid) {
+    invalidAttrs["className"] = "border-solid text-destructive bg-destructive-foreground border-destructive"
+  }
+
+  console.log(isValid, chainIndex, transformIndex)
+
   return (
-    <div className="flex flex-row justify-start">
+    <div className={"flex flex-row justify-start"}>
       <div className="flex flex-row flex-grow items-center ps-2">
-        x: <Input value={props.x} onChange={propertyChangeHandler("x")} />
+        x: <Input {...invalidAttrs} value={props.x} onChange={propertyChangeHandler("x")} />
       </div>
       <div className="flex flex-row flex-grow items-center ps-2">
-        y: <Input value={props.y} onChange={propertyChangeHandler("y")} />
+        y: <Input {...invalidAttrs} value={props.y} onChange={propertyChangeHandler("y")} />
       </div>
       <div className="flex flex-row flex-grow items-center ps-2">
-        z: <Input value={props.z} onChange={propertyChangeHandler("z")} />
+        z: <Input {...invalidAttrs} value={props.z} onChange={propertyChangeHandler("z")} />
       </div>
-      <div className="flex flex-row flex-grow items-center ps-2">w: <Input value={props.w} onChange={propertyChangeHandler("w")} /></div>
+      <div className="flex flex-row flex-grow items-center ps-2">
+        w: <Input {...invalidAttrs} value={props.w} onChange={propertyChangeHandler("w")} />
+      </div>
     </div>
   )
 }
