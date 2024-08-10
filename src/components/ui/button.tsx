@@ -1,9 +1,9 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "~/lib/utils"
-import { LucideProps, MinusIcon, PlusIcon, XIcon } from "lucide-react"
+import { cn } from "~/lib/utils";
+import { MinusIcon, PlusIcon, XIcon } from "lucide-react";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
@@ -31,36 +31,40 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
-)
+  },
+);
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-  VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+    const Comp = asChild ? Slot : "button";
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />
-    )
-  }
-)
-Button.displayName = "Button"
+    );
+  },
+);
+Button.displayName = "Button";
 
 function IconButton({ children, ...props }: ButtonProps = {}) {
-  const { className, ...rest } = props
+  const { className, ...rest } = props;
   return (
-    <Button size="icon" className={"p-1 rounded-full " + (className ?? "")} {...rest}>
+    <Button
+      size="icon"
+      className={"rounded-full p-1 " + (className ?? "")}
+      {...rest}
+    >
       {children}
     </Button>
-  )
+  );
 }
 
 function PlusButton(props: ButtonProps = {}) {
@@ -68,7 +72,7 @@ function PlusButton(props: ButtonProps = {}) {
     <IconButton variant="outline" {...props}>
       <PlusIcon className="h-5 w-5" />
     </IconButton>
-  )
+  );
 }
 
 function MinusButton(props: ButtonProps = {}) {
@@ -76,7 +80,7 @@ function MinusButton(props: ButtonProps = {}) {
     <IconButton variant="outline" {...props}>
       <MinusIcon className="h-5 w-5" />
     </IconButton>
-  )
+  );
 }
 
 function XButton(props: ButtonProps = {}) {
@@ -84,7 +88,7 @@ function XButton(props: ButtonProps = {}) {
     <IconButton variant="outline" {...props}>
       <XIcon className="h-5 w-5" />
     </IconButton>
-  )
+  );
 }
 
-export { Button, buttonVariants, IconButton, PlusButton, MinusButton, XButton }
+export { Button, buttonVariants, IconButton, PlusButton, MinusButton, XButton };
