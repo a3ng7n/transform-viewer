@@ -2,7 +2,12 @@
 
 import { IconButton, PlusButton, XButton } from "../ui/button";
 import { QuaternionSetting } from "./quaternion";
-import { type TransformChainT, type Transforms } from "~/lib/transforms-store";
+import {
+  RotateQuaternion,
+  TranslateVector3,
+  type TransformChainT,
+  type Transforms,
+} from "~/lib/transforms-store";
 import {
   useHovered,
   useTransformStore,
@@ -16,6 +21,7 @@ import {
   useState,
   type DragEventHandler,
 } from "react";
+import { nanoid } from "nanoid";
 
 interface FloatButtonProps {
   children: React.ReactNode;
@@ -50,47 +56,26 @@ function FloatButton({
   );
 }
 
-type TransformRowProps = {
-  chainIndex: number;
-  transformIndex: number;
-} & Transforms;
+type TransformRowProps = Transforms;
 
-function TransformRow({
-  chainIndex,
-  transformIndex,
-  ...transformData
-}: TransformRowProps) {
-  const { removeTransform } = useTransformStore((state) => ({
-    ...state,
-  }));
+function TransformRow(transform: TransformRowProps) {
+  const { removeTransform } = useTransformStore((state) => state);
 
-  const [hovered, setHovered] = useHovered(chainIndex, transformIndex);
+  const [hovered, setHovered] = useHovered(transform.id);
 
-  const transformSetting = ({ inputData }: { inputData: Transforms }) => {
-    switch (inputData.type) {
+  const transformSetting = (() => {
+    switch (transform.type) {
       case "translation":
-        return (
-          <Vector3Setting
-            chainIndex={chainIndex}
-            transformIndex={transformIndex}
-            {...inputData}
-          />
-        );
+        return <Vector3Setting {...transform} />;
       case "rotation": {
-        return (
-          <QuaternionSetting
-            chainIndex={chainIndex}
-            transformIndex={transformIndex}
-            {...inputData}
-          />
-        );
+        return <QuaternionSetting {...transform} />;
       }
     }
-  };
+  })();
 
   const deleteTransform: MouseEventHandler = (e) => {
     e.preventDefault();
-    removeTransform(chainIndex, transformIndex);
+    removeTransform(transform.id);
   };
 
   const dragStart: DragEventHandler<HTMLDivElement> = (e) => {
@@ -115,56 +100,80 @@ function TransformRow({
         >
           <GripVertical className="stroke-muted-foreground" />
         </div>
-        <div className="px-2">
-          {transformSetting({ inputData: transformData })}
-        </div>
+        <div className="px-2">{transformSetting}</div>
         <FloatButton
           className="right-2 top-1/2"
           onMouseOver={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
           <XButton
-            title={`delete ${transformData.type}`}
+            title={`delete ${transform.type}`}
             variant={"destructive"}
             onClick={deleteTransform}
             className={"h-5 w-5" + (hovered ? " opacity-100 " : " opacity-0 ")}
           />
         </FloatButton>
       </div>
-      <DropIndicator chainId={chainIndex} transformId={transformIndex} />
+      <DropIndicator id={transform.id} />
     </>
   );
 }
 
-function DropIndicator({
-  chainId,
-  transformId,
-}: {
-  chainId: number;
-  transformId: number;
-}) {
+function DropIndicator({ id }: { id: string }) {
   return (
     <div
-      data-transform={transformId || "-1"}
-      data-chain={chainId || "-1"}
+      data-transform-id={id || "-1"}
       className="my-0.5 h-0.5 w-full bg-secondary opacity-100"
     />
   );
 }
 
-type TransformChainContainerProps = {
-  chainIndex: number;
-} & TransformChainT;
+type TransformChainContainerProps = TransformChainT;
 
-function TransformChainContainer({
-  chainIndex,
-  ...chainData
-}: TransformChainContainerProps) {
-  const { removeChain, addTransform } = useTransformStore((state) => state);
-  const newRotation = () =>
-    addTransform(chainIndex, { type: "rotation", x: 0, y: 0, z: 0, w: 1 });
-  const newTranslation = () =>
-    addTransform(chainIndex, { type: "translation", x: 1, y: 1, z: 1 });
+function TransformChainContainer(chain: TransformChainContainerProps) {
+  const {
+    setChain,
+    removeChain,
+    addTransform,
+    transforms: allTransforms,
+  } = useTransformStore((state) => state);
+
+  const deleteSelf = () => removeChain(chain.id);
+  const newRotation = () => {
+    const newItem: RotateQuaternion = {
+      id: nanoid(),
+      type: "rotation",
+      x: 0,
+      y: 0,
+      z: 0,
+      w: 1,
+    };
+    addTransform(newItem);
+    setChain({
+      id: chain.id,
+      payload: (prevChain) => ({
+        ...prevChain,
+        transforms: [...prevChain.transforms, newItem.id],
+      }),
+    });
+  };
+  const newTranslation = () => {
+    const newItem: TranslateVector3 = {
+      id: nanoid(),
+      type: "translation",
+      x: 1,
+      y: 1,
+      z: 1,
+    };
+    addTransform(newItem);
+    setChain({
+      id: chain.id,
+      payload: (prevChain) => ({
+        ...prevChain,
+        transforms: [...prevChain.transforms, newItem.id],
+      }),
+    });
+  };
 
   const [hovered, setHovered] = useState(false);
 
@@ -264,6 +273,12 @@ function TransformChainContainer({
   //   setHovered(false);
   // };
 
+  const transforms = chain.transforms
+    .map((transformId) =>
+      allTransforms.find((transform) => transform.id == transformId),
+    )
+    .filter((transform): transform is Transforms => !!transform);
+
   return (
     <div
       className={
@@ -272,13 +287,8 @@ function TransformChainContainer({
       }
     >
       <div>
-        {chainData.transforms.map((transform, tfmIdx) => (
-          <TransformRow
-            key={`transform-${chainIndex}-${tfmIdx}`}
-            chainIndex={chainIndex}
-            transformIndex={tfmIdx}
-            {...transform}
-          />
+        {transforms.map((transform) => (
+          <TransformRow key={`transformRow-${transform.id}`} {...transform} />
         ))}
       </div>
       <div className="flex flex-grow flex-row justify-center space-x-5">
@@ -307,7 +317,7 @@ function TransformChainContainer({
         <XButton
           title={"delete transform chain"}
           variant={"destructive"}
-          onClick={() => removeChain(chainIndex)}
+          onClick={() => deleteSelf}
           className={"h-7 w-7" + (hovered ? " opacity-100 " : " opacity-0 ")}
         />
       </FloatButton>
@@ -318,22 +328,18 @@ function TransformChainContainer({
 function Container() {
   const { chains, addChain } = useTransformStore((state) => state);
 
-  const chainSettings = (chains: TransformChainT[]) => {
-    return chains.map((chain, idx) => {
-      return (
-        <div key={`chain-${idx}`}>
-          {idx > 0 ? <Separator /> : null}
-          <TransformChainContainer chainIndex={idx} {...chain} />
-        </div>
-      );
-    });
-  };
+  const chainSettings = chains.map((chain, idx) => (
+    <div key={`chainRow-${chain.id}`}>
+      {idx > 0 ? <Separator /> : null}
+      <TransformChainContainer {...chain} />
+    </div>
+  ));
 
-  const newChain = () => addChain({ transforms: [] });
+  const newChain = () => addChain({ id: nanoid(), transforms: [] });
 
   return (
     <div className="flex flex-grow flex-col">
-      {chainSettings(chains)}
+      {chainSettings}
       <PlusButton
         title={"add new transform chain"}
         variant={"outline"}
