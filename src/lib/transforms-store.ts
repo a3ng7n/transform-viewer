@@ -1,6 +1,10 @@
 import { createStore } from "zustand/vanilla";
 
+import { nanoid } from "nanoid";
+
 interface TransformBase {
+  /** the id of this transform */
+  id: string;
   type: "rotation" | "translation";
 }
 export interface RotationBase extends TransformBase {
@@ -29,42 +33,75 @@ export type RotateQuaternion = RotationBase & Quaternion;
 export type Transforms = TranslateVector3 | RotateQuaternion;
 
 export interface TransformChainT {
-  transforms: Transforms[];
+  /** the id of this chain */
+  id: string;
+  /** an array of transform ids or chain ids */
+  transforms: string[];
 }
 
 export type TransformState = {
   chains: TransformChainT[];
-  hovered: [number, number][];
-  selected?: [number, number];
+  transforms: Transforms[];
+  hovered: string[];
+  selected?: string;
 };
 
 export type TransformActions = {
-  updateChains: (chains: TransformChainT[]) => void;
+  // chain operations
+
+  /** adds `chain` to list of chains */
   addChain: (chain: TransformChainT) => void;
-  removeChain: (index: number) => void;
-  addTransform: (chainIndex: number, transform: Transforms) => void;
-  removeTransform: (chainIndex: number, transformIndex: number) => void;
-  setTransform: (
-    chainIndex: number,
-    transformIndex: number,
-    payload: React.SetStateAction<Transforms>,
+  /** removes chain from `chains` and from any other `chains` */
+  removeChain: (payload: string | TransformChainT) => void;
+  /** `chains` setter */
+  setChains: (chains: React.SetStateAction<TransformChainT[]>) => void;
+  /** finds and updates existing `chain` or adds it if it doesn't exist
+   * If providing `{ id, payload }`, will find and overwrite `chain` of `id` if it exists */
+  setChain: (
+    payload:
+      | TransformChainT
+      | { id: string; payload: React.SetStateAction<TransformChainT> },
   ) => void;
-  isTransformValid: (chainIndex: number, transformIndex: number) => boolean;
-  setHovered: (chainIndex: number, transformIndex: number) => void;
-  removeHovered: (chainIndex: number, transformIndex: number) => void;
+
+  // transform operations
+
+  /** adds `transform` to list of transforms */
+  addTransform: (transform: Transforms) => void;
+  /** removes transform from `transforms` and from any `chains` */
+  removeTransform: (payload: string | Transforms) => void;
+  /** `transforms` setter */
+  setTransforms: (payload: React.SetStateAction<Transforms[]>) => void;
+  /** finds and updates existing `trainsform` or adds it if it doesn't exist
+   * If providing `{ id, payload }`, will find and overwrite `transform` of `id` if it exists */
+  setTransform: (
+    payload:
+      | Transforms
+      | { id: string; payload: React.SetStateAction<Transforms> },
+  ) => void;
+
+  isTransformValid: (id: string) => boolean;
+
+  // hovered operations
+
+  setHovered: (id: string) => void;
+  removeHovered: (id: string) => void;
   clearHovered: () => void;
-  setSelected: (chainIndex: number, transformIndex: number) => void;
+
+  // selected operations
+
+  setSelected: (id: string) => void;
   clearSelected: () => void;
 };
 
 export type TransformStore = TransformState & TransformActions;
 
 export const initTransformStore = (): TransformState => {
-  return { chains: [], hovered: [] };
+  return { chains: [], transforms: [], hovered: [] };
 };
 
 export const defaultInitState: TransformState = {
   chains: [],
+  transforms: [],
   hovered: [],
 };
 
@@ -73,7 +110,7 @@ export const isTransformFieldValid = (field: number | string) => {
 };
 
 export const isTransformValid = (transform: Transforms) => {
-  const { type, ...data } = transform;
+  const { type, id, ...data } = transform;
   const invalids = Object.values(data).some((v) => !isTransformFieldValid(v));
   if (invalids) {
     return false;
@@ -86,94 +123,125 @@ export const createTransformStore = (
 ) => {
   return createStore<TransformStore>()((set, get) => ({
     ...initState,
-    updateChains: (chains) => set((_) => ({ chains: chains })),
-    addChain: (chain) => set((state) => ({ chains: [...state.chains, chain] })),
-    removeChain: (index) =>
+    setChains: (payload) =>
       set((state) => {
-        const newChains = [...state.chains];
-        newChains.splice(index, 1);
+        const newChains =
+          typeof payload === "function" ? payload(state.chains) : payload;
         return { chains: newChains };
       }),
-    addTransform: (chainIndex, transform) =>
+    setChain: (payload) =>
       set((state) => {
-        const chain = state.chains.at(chainIndex);
-        if (!chain) return state;
-        chain.transforms = [...chain.transforms, transform];
-        return { chains: [...state.chains] };
-      }),
-    removeTransform: (chainIndex, transformIndex) =>
-      set((state) => {
-        const chain = state.chains.at(chainIndex);
-        if (!chain) return state;
-        chain.transforms.splice(transformIndex, 1);
-        return { chains: [...state.chains] };
-      }),
-    setTransform: (chainIndex, transformIndex, payload) =>
-      set((state) => {
-        const chain = state.chains.at(chainIndex);
-        if (!chain) return state;
-        const transform = chain.transforms.at(transformIndex);
-        if (!transform) return state;
-        const newTransform = (() => {
-          if (typeof payload === "function") {
-            return { ...payload(transform) };
-          } else {
-            return { ...payload };
-          }
-        })();
+        const newChains = (chains: TransformChainT[]) => {
+          if ("payload" in payload) {
+            const chainGetterGetter = (
+              pld: React.SetStateAction<TransformChainT>,
+            ) => {
+              if (typeof pld == "function") {
+                return (chain: TransformChainT) => pld(chain);
+              }
+              return (_: TransformChainT) => pld;
+            };
 
-        const newTransforms = [
-          ...chain.transforms.slice(0, transformIndex),
-          newTransform,
-          ...chain.transforms.slice(transformIndex + 1),
-        ];
-        const newChains = [
-          ...state.chains.slice(0, chainIndex),
-          { ...chain, transforms: [...newTransforms] },
-          ...state.chains.slice(chainIndex + 1),
-        ];
-        const newState = { chains: newChains };
-        return { ...newState };
+            const chainGetter = chainGetterGetter(payload.payload);
+
+            return chains.map((chain) => {
+              if (chain.id != payload.id) return chain;
+              return chainGetter(chain);
+            });
+          } else {
+            return [...chains.filter((chain) => chain.id != chain.id), payload];
+          }
+        };
+
+        return {
+          chains: newChains(state.chains),
+        };
       }),
-    isTransformValid: (chainIndex: number, transformIndex: number) => {
-      const state = get();
-      const chain = state.chains.at(chainIndex);
-      if (!chain) return false;
-      const transform = chain.transforms.at(transformIndex);
-      if (!transform) return false;
-      return isTransformValid(transform);
-    },
-    setHovered: (chainIndex: number, transformIndex: number) =>
+    addChain: (chain) => set((state) => ({ chains: [...state.chains, chain] })),
+    removeChain: (payload) =>
       set((state) => {
-        if (
-          state.hovered.some(
-            (hover) => hover[0] == chainIndex && hover[1] == transformIndex,
-          )
-        ) {
+        const removeId = typeof payload == "string" ? payload : payload.id;
+        const newChains = state.chains
+          .filter((chain) => chain.id != removeId)
+          .map((chain) => ({
+            ...chain,
+            transforms: chain.transforms.filter((id) => id != removeId),
+          }));
+        return {
+          chains: newChains,
+        };
+      }),
+    addTransform: (transform) =>
+      set((state) => ({ transforms: [...state.transforms, transform] })),
+    removeTransform: (payload) =>
+      set((state) => {
+        const removeId = typeof payload == "string" ? payload : payload.id;
+        const newTransforms = state.transforms.filter(
+          (transform) => transform.id != removeId,
+        );
+        const newChains = state.chains.map((chain) => ({
+          ...chain,
+          transforms: chain.transforms.filter((id) => id != removeId),
+        }));
+        return { chains: newChains, transforms: newTransforms };
+      }),
+    setTransforms: (payload) =>
+      set((state) => {
+        const newTransforms =
+          typeof payload === "function" ? payload(state.transforms) : payload;
+        return { transforms: newTransforms };
+      }),
+    setTransform: (payload) =>
+      set((state) => {
+        const newTransforms = (transforms: Transforms[]) => {
+          if ("payload" in payload) {
+            const transformGetterGetter = (
+              pld: React.SetStateAction<Transforms>,
+            ) => {
+              if (typeof pld == "function") {
+                return (chain: Transforms) => pld(chain);
+              }
+              return (_: Transforms) => pld;
+            };
+
+            const transformGetter = transformGetterGetter(payload.payload);
+
+            return transforms.map((chain) => {
+              if (chain.id != payload.id) return chain;
+              return transformGetter(chain);
+            });
+          } else {
+            return [
+              ...transforms.filter((chain) => chain.id != chain.id),
+              payload,
+            ];
+          }
+        };
+
+        return {
+          transforms: newTransforms(state.transforms),
+        };
+      }),
+    isTransformValid: (id) => {
+      const state = get();
+      const transform = state.transforms.find(
+        (transform) => transform.id == id,
+      );
+      return Boolean(transform && isTransformValid(transform));
+    },
+    setHovered: (id) =>
+      set((state) => {
+        if (state.hovered.some((hover) => hover == id)) {
           return state;
         }
-
-        return { hovered: [...state.hovered, [chainIndex, transformIndex]] };
+        return { hovered: [...state.hovered, id] };
       }),
-    removeHovered: (chainIndex: number, transformIndex: number) =>
-      set((state) => {
-        const newHovered = state.hovered.filter(
-          (hover) => !(hover[0] == chainIndex && hover[1] == transformIndex),
-        );
-
-        return { hovered: [...newHovered] };
-      }),
-    clearHovered: () =>
-      set((_) => {
-        return { hovered: [] };
-      }),
-    setSelected: (chainIndex: number, transformIndex: number) =>
-      set((_) => {
-        return { selected: [chainIndex, transformIndex] };
-      }),
-    clearSelected: () =>
-      set((_) => {
-        return { selected: undefined };
-      }),
+    removeHovered: (id) =>
+      set((state) => ({
+        hovered: state.hovered.filter((hover) => hover != id),
+      })),
+    clearHovered: () => set((_) => ({ hovered: [] })),
+    setSelected: (id) => set((_) => ({ selected: id })),
+    clearSelected: () => set((_) => ({ selected: undefined })),
   }));
 };
