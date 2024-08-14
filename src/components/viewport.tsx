@@ -65,8 +65,12 @@ function RotateQuaternionView({
         <CustomAxes
           ref={ref}
           scale={hovered ? 1.3 : 1.0}
-          onPointerEnter={() => setHovered(true)}
+          onPointerEnter={(e) => {
+            e.stopPropagation();
+            setHovered(true);
+          }}
           onPointerLeave={() => setHovered(false)}
+          onPointerMissed={() => setHovered(false)}
         />
         {children}
       </mesh>
@@ -104,8 +108,12 @@ function TranslateVector3View({
           ref={ref}
           args={[dir, origin, len]}
           scale={hovered ? 1.1 : 1.0}
-          onPointerEnter={() => setHovered(true)}
+          onPointerEnter={(e) => {
+            e.stopPropagation();
+            setHovered(true);
+          }}
           onPointerLeave={() => setHovered(false)}
+          onPointerMissed={() => setHovered(false)}
         />
         <mesh position={[+transform.x, +transform.y, +transform.z]}>
           {children}

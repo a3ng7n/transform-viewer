@@ -126,7 +126,7 @@ function TransformChainContainer({
   const newRotation = () =>
     addTransform(chainIndex, { type: "rotation", x: 0, y: 0, z: 0, w: 1 });
   const newTranslation = () =>
-    addTransform(chainIndex, { type: "translation", x: 1, y: 2, z: 3 });
+    addTransform(chainIndex, { type: "translation", x: 1, y: 1, z: 1 });
 
   const [hovered, setHovered] = useState(false);
 
