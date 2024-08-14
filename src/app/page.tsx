@@ -1,6 +1,12 @@
 import { Viewport } from "~/components/viewport";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "~/components/ui/resizable";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "~/components/ui/resizable";
 import { Container } from "~/components/transforms/container";
+import { IconButton } from "~/components/ui/button";
+import { SiGithub } from "@icons-pack/react-simple-icons";
 
 export default function HomePage() {
   return (
@@ -18,7 +24,13 @@ export default function HomePage() {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
-    </main >
+      <div className="absolute right-3 top-3">
+        <a href="https://github.com/a3ng7n/transform-viewer">
+          <IconButton>
+            <SiGithub />
+          </IconButton>
+        </a>
+      </div>
+    </main>
   );
 }
-

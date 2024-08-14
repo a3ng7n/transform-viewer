@@ -176,7 +176,7 @@ function Viewport() {
   ));
 
   return (
-    <div className="h-full w-full">
+    <div className="h-screen w-full">
       <Canvas shadows camera={{ position: [5, 5, 5] }} resize={{ debounce: 0 }}>
         {chainViews}
         <Grid fadeFrom={0} infiniteGrid fadeDistance={25} fadeStrength={5} />
