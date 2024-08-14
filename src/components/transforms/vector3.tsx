@@ -1,48 +1,47 @@
 "use client";
 
-import { isTransformFieldValid, type Vector3 } from "~/lib/transforms-store";
+import {
+  type TranslateVector3,
+  isTransformFieldValid,
+  type Vector3,
+} from "~/lib/transforms-store";
 import { Input } from "../ui/input";
-import { useTransformStore } from "~/providers/transforms-store-provider";
-import { invalidInputAttrs, propertyChangeHandler } from "./quaternion";
+import {
+  useTransformField,
+  useTransformStore,
+} from "~/providers/transforms-store-provider";
+import { invalidInputAttrs } from "./quaternion";
 
-type Vector3SettingProps = {
-  chainIndex: number;
-  transformIndex: number;
-} & Vector3;
+type Vector3SettingProps = TranslateVector3;
 
-function Vector3Setting({
-  chainIndex,
-  transformIndex,
-  ...props
-}: Vector3SettingProps) {
+function Vector3Setting(vector: Vector3SettingProps) {
   const { setTransform } = useTransformStore((state) => state);
 
-  const onChangeProp = (property: keyof Vector3) =>
-    propertyChangeHandler(chainIndex, transformIndex, property, setTransform);
+  const onChangeProp = useTransformField<Vector3>(vector.id, setTransform);
 
   return (
     <div className="flex flex-row justify-start">
       <div className="flex flex-grow flex-row items-center ps-2">
         x:{" "}
         <Input
-          {...(isTransformFieldValid(props.x) ? {} : invalidInputAttrs)}
-          value={props.x}
+          {...(isTransformFieldValid(vector.x) ? {} : invalidInputAttrs)}
+          value={vector.x}
           onChange={onChangeProp("x")}
         />
       </div>
       <div className="flex flex-grow flex-row items-center ps-2">
         y:{" "}
         <Input
-          {...(isTransformFieldValid(props.y) ? {} : invalidInputAttrs)}
-          value={props.y}
+          {...(isTransformFieldValid(vector.y) ? {} : invalidInputAttrs)}
+          value={vector.y}
           onChange={onChangeProp("y")}
         />
       </div>
       <div className="flex flex-grow flex-row items-center ps-2">
         z:{" "}
         <Input
-          {...(isTransformFieldValid(props.z) ? {} : invalidInputAttrs)}
-          value={props.z}
+          {...(isTransformFieldValid(vector.z) ? {} : invalidInputAttrs)}
+          value={vector.z}
           onChange={onChangeProp("z")}
         />
       </div>

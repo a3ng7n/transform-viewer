@@ -43,19 +43,14 @@ function CustomAxes(props: MeshProps) {
 }
 
 type RotateQuaternionViewProps = {
-  chainIndex: number;
-  transformIndex: number;
   children?: ReactElement;
 } & RotateQuaternion;
 
 function RotateQuaternionView({
-  chainIndex,
-  transformIndex,
   children,
   ...transform
 }: RotateQuaternionViewProps) {
-  const [hovered, setHovered] = useHovered(chainIndex, transformIndex);
-
+  const [hovered, setHovered] = useHovered(transform.id);
   return (
     <>
       <mesh
@@ -77,19 +72,15 @@ function RotateQuaternionView({
 }
 
 type TranslateVector3ViewProps = {
-  chainIndex: number;
-  transformIndex: number;
   children?: ReactElement;
 } & TranslateVector3;
 
 function TranslateVector3View({
-  chainIndex,
-  transformIndex,
   children,
   ...transform
 }: TranslateVector3ViewProps) {
   const ref = useRef<ArrowHelper>(null!);
-  const [hovered, setHovered] = useHovered(chainIndex, transformIndex);
+  const [hovered, setHovered] = useHovered(transform.id);
   const dir = new THREE.Vector3();
   const origin = new THREE.Vector3();
   let len = 0;
@@ -121,29 +112,22 @@ function TranslateVector3View({
   );
 }
 
-type TransformChainViewProps = {
-  chainIndex: number;
-} & TransformChainT;
+type TransformChainViewProps = TransformChainT;
 
-function TransformChainView({
-  chainIndex,
-  ...chainData
-}: TransformChainViewProps) {
+function TransformChainView(chain: TransformChainViewProps) {
   let tfmview: ReactElement = <></>;
 
-  for (const [transformIndexRev, transform] of chainData.transforms
-    .slice()
-    .reverse()
-    .entries()) {
-    const transformIndex = chainData.transforms.length - 1 - transformIndexRev;
+  const { transforms } = useTransformStore((state) => state);
+
+  for (const transformId of chain.transforms.slice().reverse()) {
+    const transform = transforms.find((tfm) => tfm.id == transformId);
+    if (!transform) continue;
 
     switch (transform.type) {
       case "translation": {
         tfmview = (
           <TranslateVector3View
-            key={`transformView-${chainIndex}-${transformIndex}`}
-            chainIndex={chainIndex}
-            transformIndex={transformIndex}
+            key={`transformView-${transform.id}`}
             {...transform}
           >
             {tfmview}
@@ -154,9 +138,7 @@ function TransformChainView({
       case "rotation": {
         tfmview = (
           <RotateQuaternionView
-            key={`transformView-${chainIndex}-${transformIndex}`}
-            chainIndex={chainIndex}
-            transformIndex={transformIndex}
+            key={`transformView-${transform.id}`}
             {...transform}
           >
             {tfmview}
@@ -173,12 +155,8 @@ function TransformChainView({
 function Viewport() {
   const { chains } = useTransformStore((state) => state);
 
-  const chainViews = chains.map((chain, chainIndex) => (
-    <TransformChainView
-      key={`chainView-${chainIndex}`}
-      chainIndex={chainIndex}
-      {...chain}
-    />
+  const chainViews = chains.map((chain) => (
+    <TransformChainView key={`chainView-${chain.id}`} {...chain} />
   ));
 
   return (
