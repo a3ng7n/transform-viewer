@@ -54,7 +54,6 @@ function RotateQuaternionView({
   children,
   ...transform
 }: RotateQuaternionViewProps) {
-  const ref = useRef<THREE.Mesh>(null!);
   const [hovered, setHovered] = useHovered(chainIndex, transformIndex);
 
   return (
@@ -63,7 +62,6 @@ function RotateQuaternionView({
         quaternion={[+transform.x, +transform.y, +transform.z, +transform.w]}
       >
         <CustomAxes
-          ref={ref}
           scale={hovered ? 1.3 : 1.0}
           onPointerEnter={(e) => {
             e.stopPropagation();
