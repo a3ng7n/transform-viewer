@@ -5,7 +5,7 @@ import {
   createContext,
   useRef,
   useContext,
-  ChangeEventHandler,
+  type ChangeEventHandler,
 } from "react";
 import { useStore } from "zustand";
 
@@ -13,9 +13,9 @@ import {
   type TransformStore,
   createTransformStore,
   initTransformStore,
-  Vector3,
-  Quaternion,
-  TransformActions,
+  type Vector3,
+  type Quaternion,
+  type TransformActions,
 } from "~/lib/transforms-store";
 
 export type TransformStoreApi = ReturnType<typeof createTransformStore>;

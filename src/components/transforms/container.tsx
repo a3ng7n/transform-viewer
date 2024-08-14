@@ -2,11 +2,11 @@
 
 import { IconButton, PlusButton, XButton } from "../ui/button";
 import { QuaternionSetting } from "./quaternion";
-import {
+import type {
   RotateQuaternion,
   TranslateVector3,
-  type TransformChainT,
-  type Transforms,
+  TransformChainT,
+  Transforms,
 } from "~/lib/transforms-store";
 import {
   useHovered,
@@ -19,7 +19,7 @@ import {
   type HTMLAttributes,
   type MouseEventHandler,
   useState,
-  type DragEventHandler,
+  type DragEvent,
 } from "react";
 import { nanoid } from "nanoid";
 
@@ -56,9 +56,14 @@ function FloatButton({
   );
 }
 
-type TransformRowProps = Transforms;
+type TransformRowProps = {
+  handleDragStart: (
+    e: DragEvent,
+    transform: Transforms | TransformChainT,
+  ) => void;
+} & Transforms;
 
-function TransformRow(transform: TransformRowProps) {
+function TransformRow({ handleDragStart, ...transform }: TransformRowProps) {
   const { removeTransform } = useTransformStore((state) => state);
 
   const [hovered, setHovered] = useHovered(transform.id);
@@ -78,11 +83,6 @@ function TransformRow(transform: TransformRowProps) {
     removeTransform(transform.id);
   };
 
-  const dragStart: DragEventHandler<HTMLDivElement> = (e) => {
-    console.log(e);
-    return;
-  };
-
   return (
     <>
       <div
@@ -91,7 +91,7 @@ function TransformRow(transform: TransformRowProps) {
           (hovered ? " my-2 border-solid bg-accent shadow-md " : " ")
         }
         draggable={true}
-        onDragStart={dragStart}
+        onDragStart={(e) => handleDragStart(e, transform)}
       >
         <div
           className="mx-0.5 flex w-5 flex-shrink-0 cursor-grab items-center rounded bg-muted"
@@ -114,16 +114,23 @@ function TransformRow(transform: TransformRowProps) {
           />
         </FloatButton>
       </div>
-      <DropIndicator id={transform.id} />
     </>
   );
 }
 
-function DropIndicator({ id }: { id: string }) {
+function DropIndicator({
+  itemId,
+  containerId,
+}: {
+  itemId?: string;
+  containerId?: string;
+}) {
   return (
     <div
-      data-transform-id={id || "-1"}
-      className="my-0.5 h-0.5 w-full bg-secondary opacity-100"
+      data-item={itemId ?? "-1"}
+      data-container={containerId ?? "-1"}
+      style={{ opacity: 0 }}
+      className="transition-[margin, opacity] w-full bg-accent-foreground opacity-100 duration-100 ease-in-out"
     />
   );
 }
@@ -136,6 +143,7 @@ function TransformChainContainer(chain: TransformChainContainerProps) {
     removeChain,
     addTransform,
     transforms: allTransforms,
+    chains,
   } = useTransformStore((state) => state);
 
   const deleteSelf = () => removeChain(chain.id);
@@ -177,101 +185,122 @@ function TransformChainContainer(chain: TransformChainContainerProps) {
 
   const [hovered, setHovered] = useState(false);
 
-  // const getIndicators = (): HTMLElement[] => {
-  //   return Array.from(
-  //     document.querySelectorAll<HTMLElement>(`[data-chain="${chainIndex}"]`),
-  //   );
-  // };
-  //
-  // const getNearestIndicator = (
-  //   e: DragEvent,
-  //   indicators: HTMLElement[],
-  // ): { offset: number; element: HTMLElement } => {
-  //   const DISTANCE_OFFSET = 50;
-  //
-  //   const el = indicators.reduce(
-  //     (closest, child) => {
-  //       const box = child.getBoundingClientRect();
-  //
-  //       const offset = e.clientY - (box.top + DISTANCE_OFFSET);
-  //
-  //       if (offset < 0 && offset > closest.offset) {
-  //         return { offset: offset, element: child };
-  //       } else {
-  //         return closest;
-  //       }
-  //     },
-  //     {
-  //       offset: Number.NEGATIVE_INFINITY,
-  //       element: indicators[indicators.length - 1]!,
-  //     },
-  //   );
-  //
-  //   return el;
-  // };
-  //
-  // const highlightIndicator = (e: DragEvent) => {
-  //   const indicators = getIndicators();
-  //   clearHighlights(indicators);
-  //   const el = getNearestIndicator(e, indicators);
-  //   el.element.style.opacity = "1";
-  // };
-  //
-  // const clearHighlights = (els?: HTMLElement[]) => {
-  //   const indicators = els || getIndicators();
-  //   indicators.forEach((i) => {
-  //     i.style.opacity = "0";
-  //   });
-  // };
-  //
-  // const handleDragStart = (e: DragEvent, transform: TransformRowProps) => {
-  //   e.dataTransfer!.setData("chainIndex", transform.chainIndex.toString());
-  //   e.dataTransfer!.setData(
-  //     "transformIndex",
-  //     transform.transformIndex.toString(),
-  //   );
-  // };
-  //
-  // const handleDragEnd = (e: DragEvent) => {
-  //   const chainIndex = e.dataTransfer!.getData("chainIndex");
-  //   const transformIndex = e.dataTransfer!.getData("transformIndex");
-  //
-  //   setHovered(false);
-  //   clearHighlights();
-  //   const indicators = getIndicators();
-  //   const { element } = getNearestIndicator(e, indicators);
-  //
-  //   const chainIdx = element.dataset.chainId || "-1";
-  //   const transformIdx = element.dataset.transformId || "-1";
-  //
-  //   if (before !== cardId) {
-  //     let copy = [...cards];
-  //     let cardToTransfer = copy.find((c) => c.id === cardId);
-  //     if (!cardToTransfer) return;
-  //
-  //     cardToTransfer = { ...cardToTransfer, column };
-  //     copy = copy.filter((c) => c.id !== cardId);
-  //     const moveToBack = before === "-1";
-  //     if (moveToBack) {
-  //       copy.push(cardToTransfer);
-  //     } else {
-  //       const insertAtIndex = copy.findIndex((el) => el.id === before);
-  //       if (insertAtIndex === undefined) return;
-  //       copy.splice(insertAtIndex, 0, cardToTransfer);
-  //     }
-  //     setCards(copy);
-  //   }
-  // };
-  // const handleDragOver = (e: DragEvent) => {
-  //   e.preventDefault();
-  //   highlightIndicator(e);
-  //   setHovered(true);
-  // };
-  //
-  // const handleDragLeave = () => {
-  //   clearHighlights();
-  //   setHovered(false);
-  // };
+  const getIndicators = (): HTMLElement[] => {
+    return Array.from(
+      document.querySelectorAll<HTMLElement>("[data-container]"),
+    );
+  };
+
+  const getNearestIndicator = (
+    e: DragEvent,
+    indicators: HTMLElement[],
+  ): { offset: number; element: HTMLElement } => {
+    const DISTANCE_OFFSET = 25;
+
+    const el = indicators.reduce(
+      (closest, child) => {
+        const box = child.getBoundingClientRect();
+
+        const offset = e.clientY - (box.top + DISTANCE_OFFSET);
+
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      },
+      {
+        offset: Number.NEGATIVE_INFINITY,
+        element: indicators[indicators.length - 1]!,
+      },
+    );
+
+    return el;
+  };
+
+  const highlightIndicator = (e: DragEvent) => {
+    const indicators = getIndicators();
+    clearHighlights(indicators);
+    const el = getNearestIndicator(e, indicators);
+    el.element.style.opacity = "1";
+    el.element.style.height = "0.125rem";
+    el.element.style.margin = "0.125rem 0";
+  };
+
+  const clearHighlights = (els?: HTMLElement[]) => {
+    const indicators = els ?? getIndicators();
+    indicators.forEach((i) => {
+      i.style.opacity = "0";
+      i.style.height = "0";
+      i.style.margin = "0";
+    });
+  };
+
+  const handleDragStart = (
+    e: DragEvent,
+    transform: Transforms | TransformChainT,
+  ) => {
+    e.dataTransfer.setData("itemId", transform.id);
+    e.dataTransfer.setData("containerId", chain.id);
+  };
+
+  const handleDragEnd = (e: DragEvent) => {
+    const itemId = e.dataTransfer.getData("itemId");
+    const containerId = e.dataTransfer.getData("containerId");
+
+    setHovered(false);
+    clearHighlights();
+
+    const indicators = getIndicators();
+    const { element } = getNearestIndicator(e, indicators);
+
+    const indicatorItemId = element.dataset.item ?? "-1";
+    const indicatorContainerId = element.dataset.container ?? "-1";
+
+    if (indicatorItemId === itemId) return;
+
+    const sourceContainer = chains.find((c) => c.id === containerId);
+    if (!sourceContainer) return;
+
+    const destContainer =
+      containerId === indicatorContainerId
+        ? sourceContainer
+        : chains.find((c) => c.id === indicatorContainerId);
+    if (!destContainer) return;
+
+    sourceContainer.transforms = sourceContainer.transforms.filter(
+      (id) => id !== itemId,
+    );
+
+    const moveToBack = indicatorItemId === "-1";
+    if (moveToBack) {
+      destContainer.transforms.push(itemId);
+    } else {
+      const insertAtIndex = destContainer.transforms.findIndex(
+        (id) => id === indicatorItemId,
+      );
+      if (insertAtIndex === undefined) return;
+      destContainer.transforms.splice(insertAtIndex, 0, itemId);
+    }
+
+    if (sourceContainer.id !== destContainer.id) {
+      setChain({ ...sourceContainer });
+      setChain({ ...destContainer });
+    } else {
+      setChain({ ...sourceContainer });
+    }
+  };
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    highlightIndicator(e);
+    setHovered(true);
+  };
+
+  const handleDragLeave = () => {
+    clearHighlights();
+    setHovered(false);
+  };
 
   const transforms = chain.transforms
     .map((transformId) =>
@@ -285,11 +314,22 @@ function TransformChainContainer(chain: TransformChainContainerProps) {
         "delay-50 relative mx-2 rounded-sm border-[1px] border-hidden transition-all duration-300 ease-in-out" +
         (hovered ? " border-solid bg-primary-foreground shadow-md " : " ")
       }
+      onDrop={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
     >
-      <div>
-        {transforms.map((transform) => (
-          <TransformRow key={`transformRow-${transform.id}`} {...transform} />
+      <div className={"delay-50 transition-all duration-300 ease-in-out"}>
+        {transforms.map((t) => (
+          <>
+            <DropIndicator itemId={t.id} containerId={chain.id} />
+            <TransformRow
+              key={`transformRow-${t.id}`}
+              {...t}
+              handleDragStart={handleDragStart}
+            />
+          </>
         ))}
+        <DropIndicator containerId={chain.id} />
       </div>
       <div className="flex flex-grow flex-row justify-center space-x-5">
         <IconButton

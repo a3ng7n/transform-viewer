@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  TranslateVector3,
+  type TranslateVector3,
   isTransformFieldValid,
   type Vector3,
 } from "~/lib/transforms-store";

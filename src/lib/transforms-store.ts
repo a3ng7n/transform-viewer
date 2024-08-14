@@ -1,7 +1,5 @@
 import { createStore } from "zustand/vanilla";
 
-import { nanoid } from "nanoid";
-
 interface TransformBase {
   /** the id of this transform */
   id: string;
@@ -149,7 +147,10 @@ export const createTransformStore = (
               return chainGetter(chain);
             });
           } else {
-            return [...chains.filter((chain) => chain.id != chain.id), payload];
+            return chains.map((chain) => {
+              if (chain.id != payload.id) return chain;
+              return payload;
+            });
           }
         };
 
@@ -206,15 +207,15 @@ export const createTransformStore = (
 
             const transformGetter = transformGetterGetter(payload.payload);
 
-            return transforms.map((chain) => {
-              if (chain.id != payload.id) return chain;
-              return transformGetter(chain);
+            return transforms.map((transform) => {
+              if (transform.id != payload.id) return transform;
+              return transformGetter(transform);
             });
           } else {
-            return [
-              ...transforms.filter((chain) => chain.id != chain.id),
-              payload,
-            ];
+            return transforms.map((transform) => {
+              if (transform.id != payload.id) return transform;
+              return payload;
+            });
           }
         };
 
