@@ -3,7 +3,10 @@
 import { IconButton, PlusButton, XButton } from "../ui/button";
 import { QuaternionSetting } from "./quaternion";
 import { type TransformChainT, type Transforms } from "~/lib/transforms-store";
-import { useTransformStore } from "~/providers/transforms-store-provider";
+import {
+  useHovered,
+  useTransformStore,
+} from "~/providers/transforms-store-provider";
 import { Separator } from "../ui/separator";
 import { Vector3Setting } from "./vector3";
 import { MoveUpRightIcon, Rotate3dIcon } from "lucide-react";
@@ -56,7 +59,7 @@ function TransformRow({
     ...state,
   }));
 
-  const [hovered, setHovered] = useState(false);
+  const [hovered, setHovered] = useHovered(chainIndex, transformIndex);
 
   const transformSetting = ({ inputData }: { inputData: Transforms }) => {
     switch (inputData.type) {

@@ -34,6 +34,8 @@ export interface TransformChainT {
 
 export type TransformState = {
   chains: TransformChainT[];
+  hovered: [number, number][];
+  selected?: [number, number];
 };
 
 export type TransformActions = {
@@ -48,16 +50,22 @@ export type TransformActions = {
     payload: React.SetStateAction<Transforms>,
   ) => void;
   isTransformValid: (chainIndex: number, transformIndex: number) => boolean;
+  setHovered: (chainIndex: number, transformIndex: number) => void;
+  removeHovered: (chainIndex: number, transformIndex: number) => void;
+  clearHovered: () => void;
+  setSelected: (chainIndex: number, transformIndex: number) => void;
+  clearSelected: () => void;
 };
 
 export type TransformStore = TransformState & TransformActions;
 
 export const initTransformStore = (): TransformState => {
-  return { chains: [] };
+  return { chains: [], hovered: [] };
 };
 
 export const defaultInitState: TransformState = {
   chains: [],
+  hovered: [],
 };
 
 export const isTransformFieldValid = (field: number | string) => {
@@ -66,8 +74,8 @@ export const isTransformFieldValid = (field: number | string) => {
 
 export const isTransformValid = (transform: Transforms) => {
   const { type, ...data } = transform;
-  const valids = Object.values(data).some((v) => isTransformFieldValid(v));
-  if (valids) {
+  const invalids = Object.values(data).some((v) => !isTransformFieldValid(v));
+  if (invalids) {
     return false;
   }
   return true;
@@ -135,5 +143,37 @@ export const createTransformStore = (
       if (!transform) return false;
       return isTransformValid(transform);
     },
+    setHovered: (chainIndex: number, transformIndex: number) =>
+      set((state) => {
+        if (
+          state.hovered.some(
+            (hover) => hover[0] == chainIndex && hover[1] == transformIndex,
+          )
+        ) {
+          return state;
+        }
+
+        return { hovered: [...state.hovered, [chainIndex, transformIndex]] };
+      }),
+    removeHovered: (chainIndex: number, transformIndex: number) =>
+      set((state) => {
+        const newHovered = state.hovered.filter(
+          (hover) => !(hover[0] == chainIndex && hover[1] == transformIndex),
+        );
+
+        return { hovered: [...newHovered] };
+      }),
+    clearHovered: () =>
+      set((_) => {
+        return { hovered: [] };
+      }),
+    setSelected: (chainIndex: number, transformIndex: number) =>
+      set((_) => {
+        return { selected: [chainIndex, transformIndex] };
+      }),
+    clearSelected: () =>
+      set((_) => {
+        return { selected: undefined };
+      }),
   }));
 };
